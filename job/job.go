@@ -38,4 +38,5 @@ const (
 	Queued     = "QUEUED"
 	InProgress = "IN_PROGRESS"
 	Concluded  = "CONCLUDED"
+	Canceled   = "CANCELED"
 )

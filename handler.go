@@ -20,6 +20,7 @@ func NewJobsHandler() JobsHandler {
 	jh.mux.HandleFunc("POST /jobs/enqueue", jh.enqueue)
 	jh.mux.HandleFunc("POST /jobs/dequeue", jh.dequeue)
 	jh.mux.HandleFunc("PUT /jobs/{jobId}/conclude", jh.conclude)
+    jh.mux.HandleFunc("PUT /jobs/{jobId}/cancel", jh.cancel)
 	jh.mux.HandleFunc("GET /jobs/{jobId}", jh.info)
 
 	return jh
@@ -86,6 +87,23 @@ func (jh JobsHandler) conclude(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = jh.queue.Conclude(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (jh JobsHandler) cancel(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(r.PathValue("jobId"), 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = jh.queue.Cancel(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

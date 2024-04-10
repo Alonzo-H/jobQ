@@ -67,6 +67,14 @@ func (q *Queue) Conclude(id uint64) error {
 	}
 	j := jAny.(jobNP)
 
+    if j.Status == job.Concluded {
+        return nil
+    }
+
+    if j.Status == job.Canceled {
+        return fmt.Errorf("%w job with id=%d was already canceled", ErrFinalState, id)
+    }
+
 	if j.np != nil {
 		q.list.Remove(j.np)
 		j.np = nil
@@ -74,6 +82,31 @@ func (q *Queue) Conclude(id uint64) error {
 
 	j.Status = job.Concluded
     j.ConcludedAt = time.Now()
+	q.value.Store(j.Id, j)
+	return nil
+}
+
+func (q *Queue) Cancel(id uint64) error {
+	jAny, ok := q.value.Load(id)
+	if !ok {
+		return fmt.Errorf("%w job with id=%d", ErrNotFound, id)
+	}
+	j := jAny.(jobNP)
+
+    if j.Status == job.Canceled {
+        return nil
+    }
+
+    if j.Status == job.Concluded {
+        return fmt.Errorf("%w job with id=%d was already Concluded", ErrFinalState, id)
+    }
+
+	if j.np != nil {
+		q.list.Remove(j.np)
+		j.np = nil
+	}
+
+	j.Status = job.Canceled
 	q.value.Store(j.Id, j)
 	return nil
 }
